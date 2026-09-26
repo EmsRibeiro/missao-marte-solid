@@ -16,13 +16,12 @@ public class ArquivoRankingRepository implements RankingRepository {
 
     @Override
     public void salvar(RankingEntry entrada) {
-        // Aqui vamos colocar a lógica para ler o JSON antigo, adicionar a nova entrada,
-        // ordenar, cortar os 5 primeiros e salvar o JSON novo.
+        // le o json antigo, adc nova entrada ordena e corta somente os 5 pra salvar num arquivo novo
     }
 
     @Override
     public List<RankingEntry> listar() {
-        // Aqui vamos ler o arquivo de texto e transformar o JSON de volta para a lista.
+        // le o arquivo txt e forma o json
         return new ArrayList<>();
     }
 
