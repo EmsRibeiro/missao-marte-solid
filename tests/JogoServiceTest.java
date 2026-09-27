@@ -92,6 +92,11 @@ public class JogoServiceTest {
         check(ranking.entries.isEmpty(), "abortada não pontua");
         check(abort.contains("Estatísticas da Partida:"), "aborto precisa mostrar estatísticas");
         check(abort.contains("A bordo: 0/5"), "capacidade original deve continuar sendo cinco");
+        ranking.entries.add(new RankingEntry("Recordista", 55, solidexercicio10.model.Dificuldade.FACIL, 4, "2026-09-26", 4));
+        String abortComRecorde = run("1\nPaulo\nfacil\n2\n\nq\n4\n", ranking);
+        check(abortComRecorde.contains("Recorde atual: 55 pontos (Piloto: Recordista)"),
+                "estatísticas de aborto devem mostrar o recorde anterior");
+        ranking.entries.clear();
         String perdaVidas = run("1\nPaulo\nmedio\n2\n\nd\nd\ns\ns\nc\nc\n4\n", ranking);
         check(perdaVidas.contains("GAME OVER!"), "três colisões devem encerrar a missão");
         check(perdaVidas.contains("Estatísticas da Partida:"), "derrota precisa mostrar estatísticas");

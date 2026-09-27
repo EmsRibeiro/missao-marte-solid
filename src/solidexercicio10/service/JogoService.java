@@ -299,19 +299,19 @@ public class JogoService {
         System.out.printf(" - Movimentos Efetuados: %d%n", movimentos);
         System.out.printf(" - Tempo de Jogo: %d segundos%n", tempoSegundos);
         System.out.printf(" - Passageiros Resgatados: %d%n", passageiros);
+        List<RankingEntry> ranking = rankingRepository.listar();
+        if (!ranking.isEmpty()) {
+            RankingEntry primeiro = ranking.get(0);
+            System.out.printf(" - Recorde atual: %d pontos (Piloto: %s)%n",
+                    primeiro.score(), primeiro.name());
+        }
     }
 
     private void salvarSeEntrarNoRanking(String nome, int score, Dificuldade dificuldade,
                                          int passageiros, long tempoSegundos) {
         List<RankingEntry> ranking = rankingRepository.listar();
-        if (!ranking.isEmpty()) {
-            RankingEntry primeiro = ranking.get(0);
-            if (score > primeiro.score()) {
-                System.out.println("Novo recorde absoluto do sistema!");
-            } else {
-                System.out.printf(" - Recorde atual: %d pontos (Piloto: %s)%n",
-                        primeiro.score(), primeiro.name());
-            }
+        if (!ranking.isEmpty() && score > ranking.get(0).score()) {
+            System.out.println("Novo recorde absoluto do sistema!");
         }
         if (score <= 0 || ranking.size() >= 5 && ranking.stream()
                 .mapToInt(RankingEntry::score).min().orElse(0) >= score) {

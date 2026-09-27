@@ -30,6 +30,7 @@ O teste executável `tests/JogoServiceTest.java` passou nos seguintes cenários:
 - dimensão inválida usa o tamanho padrão 5;
 - capacidade de cinco lugares, inclusive no modo fácil;
 - abandono da missão mostra estatísticas e não registra pontuação;
+- estatísticas de abandono mostram o recorde atual quando já existe;
 - três colisões encerram a missão e mostram estatísticas;
 - pontuação zero encerra a missão sem registrar ranking;
 - fim da entrada durante menu, preparação ou partida encerra sem loop infinito;
@@ -55,7 +56,8 @@ controlados para que a mesma rota tenha sempre o mesmo resultado.
 ## Ajustes feitos nesta revisão
 
 1. Estatísticas passam a aparecer na vitória, derrota, abandono e fim da entrada
-   durante a partida. Isso atende ao requisito de estatísticas ao final da missão.
+   durante a partida, incluindo o recorde atual quando há um. Isso atende ao
+   requisito de estatísticas ao final da missão.
 2. A capacidade da nave voltou a cinco, como no código original.
 3. O menu informa erros de I/O representados por `UncheckedIOException` e permite
    nova tentativa. A implementação atual do repositório de arquivo captura e
