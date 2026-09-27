@@ -1,17 +1,21 @@
 # Revisão e testes do fluxo — Paulo
 
-Revisão de 26/09/2026, na branch `refactor/fluxo`.
+Revisão do fluxo iniciada em 26/09/2026 e repetida em 27/09/2026, após a
+integração dos PRs #1, #2 e #3.
 
 ## Escopo da verificação
 
-O `Main` e o `JogoService` foram compilados em Java 17 com o modelo do PR #1
-de Lucas (commit `1948fc186c813b47ec58aa1bd17aedaecc5c0520`). Para os pacotes
-de Emerson, ainda não integrados, foram usadas implementações temporárias
-com as assinaturas de `docs/CONTRATOS.md`: ranking em memória e renderizador
-sem desenho. Essas implementações temporárias não fazem parte do código entregue.
+O código inteiro de `src/solidexercicio10/` foi compilado em Java 17 com as
+implementações reais do modelo, repositório e renderizador. O teste executável
+usa o renderizador real e substitui somente o repositório de arquivo por um
+repositório em memória, para testar o fluxo sem alterar o ranking do jogador.
 
-Portanto, estes resultados verificam o fluxo e sua integração com o modelo,
-mas não validam a leitura/escrita do JSON nem a aparência do mapa final.
+Um teste adicional de integração, executado em diretório temporário, venceu
+uma partida com posições controladas, gravou uma entrada real no JSON, abriu
+uma segunda execução para consultar a pontuação 82 e resetou o arquivo. O
+teste também confirmou estatísticas ao abandonar. O código desse teste
+adicional era temporário; `tests/JogoServiceTest.java` cobre o fluxo de forma
+repetível no repositório entregue.
 
 ## Resultados
 
@@ -32,10 +36,10 @@ O teste executável `tests/JogoServiceTest.java` passou nos seguintes cenários:
 - `UncheckedIOException` ao listar, salvar ou limpar é informada ao jogador;
 - falha ao salvar/limpar não exibe a mensagem de sucesso da operação.
 
-O código original também compilou com Java 17. A comparação com `main`
+O código original também compilou com Java 17. A comparação com a base
 confirmou que nenhum arquivo em `src/exercicio10/` foi alterado.
 
-## Como repetir após integrar as três partes
+## Como repetir no projeto integrado
 
 Na raiz do repositório, depois de compilar todos os arquivos da versão nova:
 
@@ -54,8 +58,9 @@ controlados para que a mesma rota tenha sempre o mesmo resultado.
    durante a partida. Isso atende ao requisito de estatísticas ao final da missão.
 2. A capacidade da nave voltou a cinco, como no código original.
 3. O menu informa erros de I/O representados por `UncheckedIOException` e permite
-   nova tentativa. Conferir o tratamento de erros da implementação real de Emerson
-   durante a integração; o contrato não especificava o tipo da exceção.
+   nova tentativa. A implementação atual do repositório de arquivo captura e
+   imprime suas falhas sem lançar exceção, portanto a indicação de sucesso
+   ainda depende de correção na camada de persistência.
 
 ## Decisões e limitações explícitas
 
@@ -72,11 +77,12 @@ controlados para que a mesma rota tenha sempre o mesmo resultado.
 - A pontuação usa polimorfismo; o catálogo em `criarPassageiro` ainda precisa
   ser editado para incluir um novo tipo. OCP é parcial, não absoluto.
 
-## Pendências de integração
+## Pendências de qualidade
 
-- Compilar `main` depois de integrar os PRs e repetir este teste.
-- Executar uma partida com o renderizador real, verificando símbolos e limites.
-- Salvar uma vitória, fechar o programa e reabri-lo para validar o JSON.
-- Confirmar ordenação, limite Top 5 e reset no arquivo real.
-- Conferir o comportamento quando o arquivo não existe ou não pode ser acessado.
-- Finalizar `REVISAO-SOLID.md`, README e conferir os dois diagramas UML.
+- O renderizador real não mostra o símbolo da plataforma `L` em `(0,0)` quando
+  a nave deixa a posição inicial.
+- O repositório não escapa aspas em nomes no JSON e não propaga falhas reais
+  de I/O; um reset malsucedido pode resultar em mensagem final de sucesso.
+- Confirmar com o responsável pelo ranking a ordenação e o Top 5 em arquivo
+  real depois de corrigir casos inválidos.
+- Finalizar `REVISAO-SOLID.md` e complementar os diagramas UML.
