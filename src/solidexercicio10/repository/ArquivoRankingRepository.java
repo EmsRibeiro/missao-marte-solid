@@ -1,6 +1,5 @@
 package solidexercicio10.repository;
 
-import solidexercicio10.model.Dificuldade;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -8,6 +7,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import solidexercicio10.model.Dificuldade;
 
 /**
  * Implementação concreta de {@link RankingRepository} para armazenamento de pontuações em arquivo físico.
@@ -26,7 +26,7 @@ public class ArquivoRankingRepository implements RankingRepository {
     }
 
     @Override
-    public void salvar(RankingEntry entrada) {
+    public void salvar(RankingEntry entrada) throws IOException {
         List<RankingEntry> ranking = listar();
         ranking.add(entrada);
 
@@ -42,57 +42,53 @@ public class ArquivoRankingRepository implements RankingRepository {
     }
 
     @Override
-    public List<RankingEntry> listar() {
+    public List<RankingEntry> listar() throws IOException {
         List<RankingEntry> lista = new ArrayList<>();
         if (!Files.exists(caminhoArquivo)) {
             return lista; 
         }
 
-        try {
-            String conteudo = Files.readString(caminhoArquivo, StandardCharsets.UTF_8);
+        String conteudo = Files.readString(caminhoArquivo, StandardCharsets.UTF_8);
+        
+        int start = conteudo.indexOf('{');
+        while (start != -1) {
+            int end = conteudo.indexOf('}', start);
+            if (end == -1) break;
             
-            int start = conteudo.indexOf('{');
-            while (start != -1) {
-                int end = conteudo.indexOf('}', start);
-                if (end == -1) break;
-                
-                String obj = conteudo.substring(start, end);
+            String obj = conteudo.substring(start, end);
 
-                String name = extrairString(obj, "\"name\"");
-                int score = Integer.parseInt(extrairNumero(obj, "\"score\""));
-                Dificuldade diff = Dificuldade.deString(extrairString(obj, "\"dificuldade\""));
-                int pass = Integer.parseInt(extrairNumero(obj, "\"passageirosColetados\""));
-                String data = extrairString(obj, "\"dataHora\"");
-                long tempo = Long.parseLong(extrairNumero(obj, "\"tempoJogo\""));
+            // Restaura o nome desfazendo o escape das aspas
+            String name = extrairString(obj, "\"name\"").replace("\\\"", "\"");
+            int score = Integer.parseInt(extrairNumero(obj, "\"score\""));
+            Dificuldade diff = Dificuldade.deString(extrairString(obj, "\"dificuldade\""));
+            int pass = Integer.parseInt(extrairNumero(obj, "\"passageirosColetados\""));
+            String data = extrairString(obj, "\"dataHora\"");
+            long tempo = Long.parseLong(extrairNumero(obj, "\"tempoJogo\""));
 
-                lista.add(new RankingEntry(name, score, diff, pass, data, tempo));
-                
-                start = conteudo.indexOf('{', end);
-            }
-        } catch (Exception e) {
-            System.out.println("Erro ao ler ranking: " + e.getMessage());
+            lista.add(new RankingEntry(name, score, diff, pass, data, tempo));
+            
+            start = conteudo.indexOf('{', end);
         }
         return lista;
     }
 
     @Override
-    public void limpar() {
-        try {
-            Files.deleteIfExists(caminhoArquivo);
-            System.out.println("Ranking resetado com sucesso.");
-        } catch (IOException e) {
-            System.out.println("Erro ao tentar limpar o ranking: " + e.getMessage());
-        }
+    public void limpar() throws IOException {
+        Files.deleteIfExists(caminhoArquivo);
     }
 
-    private void salvarJson(List<RankingEntry> ranking) {
+    private void salvarJson(List<RankingEntry> ranking) throws IOException {
         StringBuilder sb = new StringBuilder();
         sb.append("[\n"); 
         
         for (int i = 0; i < ranking.size(); i++) {
             RankingEntry r = ranking.get(i);
+            
+            // Escapa as aspas no nome para garantir que o JSON gerado seja válido
+            String nomeEscapado = r.name().replace("\"", "\\\"");
+
             sb.append("  {\n");
-            sb.append("    \"name\": \"").append(r.name()).append("\",\n");
+            sb.append("    \"name\": \"").append(nomeEscapado).append("\",\n");
             sb.append("    \"score\": ").append(r.score()).append(",\n");
             sb.append("    \"dificuldade\": \"").append(r.dificuldade()).append("\",\n");
             sb.append("    \"passageirosColetados\": ").append(r.passageirosColetados()).append(",\n");
@@ -107,11 +103,7 @@ public class ArquivoRankingRepository implements RankingRepository {
         }
         sb.append("]"); 
 
-        try {
-            Files.writeString(caminhoArquivo, sb.toString(), StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            System.out.println("Erro ao salvar arquivo JSON: " + e.getMessage());
-        }
+        Files.writeString(caminhoArquivo, sb.toString(), StandardCharsets.UTF_8);
     }
 
     private String extrairString(String json, String chave) {
