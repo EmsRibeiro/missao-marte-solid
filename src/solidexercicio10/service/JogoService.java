@@ -1,5 +1,6 @@
 package solidexercicio10.service;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -59,7 +60,7 @@ public class JogoService {
 
     private void exibirBoasVindas() {
         System.out.println("================================================");
-        System.out.println("         MISSÃO MARTE UNIFOR — SOLID");
+        System.out.println("        MISSÃO MARTE UNIFOR — SOLID");
         System.out.println("================================================");
     }
 
@@ -112,19 +113,15 @@ public class JogoService {
     private int lerTamanhoMapa(String entrada) {
         try {
             int tamanho = Integer.parseInt(entrada.trim());
-            // Em -1..1, as posições livres são insuficientes para os obstáculos do jogo.
             if (tamanho >= 2 && tamanho <= 50) {
                 return tamanho;
             }
         } catch (NumberFormatException ignored) {
-            // Entrada vazia ou não numérica: usar a dimensão padrão.
         }
         System.out.println("Tamanho inválido. Usando o padrão (5).");
         return 5;
     }
 
-    //dif media? 
-    //PAREI AQUI
     private Missao criarNovaMissao(Dificuldade dificuldade, int minX, int maxX, int minY, int maxY) {
         int passageiros = dificuldade == Dificuldade.FACIL ? 4 : 5;
         int asteroides = dificuldade == Dificuldade.FACIL ? 1 : dificuldade == Dificuldade.DIFICIL ? 3 : 2;
@@ -159,7 +156,6 @@ public class JogoService {
     private int[] sortearPosicaoLivre(Missao missao, int minX, int maxX, int minY, int maxY) {
         int largura = maxX - minX + 1;
         int altura = maxY - minY + 1;
-        // Após tentativas aleatórias, procura uma vaga para garantir o término da geração.
         for (int tentativa = 0; tentativa < largura * altura * 2; tentativa++) {
             int x = random.nextInt(largura) + minX;
             int y = random.nextInt(altura) + minY;
@@ -208,7 +204,7 @@ public class JogoService {
     }
 
     private void jogarPartida(Scanner scanner, String nome, Dificuldade dificuldade,
-                            Missao missao, int minX, int maxX, int minY, int maxY) {
+                              Missao missao, int minX, int maxX, int minY, int maxY) {
         Nave nave = missao.getNave();
         int score = pontuacaoInicial(dificuldade);
         int movimentos = 0;
@@ -286,43 +282,56 @@ public class JogoService {
         System.out.printf(" - Movimentos Efetuados: %d%n", movimentos);
         System.out.printf(" - Tempo de Jogo: %d segundos%n", tempoSegundos);
         System.out.printf(" - Passageiros Resgatados: %d%n", passageiros);
-        List<RankingEntry> ranking = rankingRepository.listar();
-        if (!ranking.isEmpty()) {
-            RankingEntry primeiro = ranking.get(0);
-            if (score > primeiro.score()) {
-                System.out.println("Novo recorde absoluto do sistema!");
-            } else {
-                System.out.printf(" - Recorde atual: %d pontos (Piloto: %s)%n",
-                        primeiro.score(), primeiro.name());
+        
+        try {
+            List<RankingEntry> ranking = rankingRepository.listar();
+            if (!ranking.isEmpty()) {
+                RankingEntry primeiro = ranking.get(0);
+                if (score > primeiro.score()) {
+                    System.out.println("Novo recorde absoluto do sistema!");
+                } else {
+                    System.out.printf(" - Recorde atual: %d pontos (Piloto: %s)%n",
+                            primeiro.score(), primeiro.name());
+                }
             }
+        } catch (IOException e) {
+            System.out.println("Aviso: Não foi possível verificar o recorde atual devido a uma falha de leitura.");
         }
     }
 
     private void salvarSeEntrarNoRanking(String nome, int score, Dificuldade dificuldade,
                                          int passageiros, long tempoSegundos) {
-        List<RankingEntry> ranking = rankingRepository.listar();
-        if (score <= 0 || ranking.size() >= 5 && ranking.stream()
-                .mapToInt(RankingEntry::score).min().orElse(0) >= score) {
-            return;
+        try {
+            List<RankingEntry> ranking = rankingRepository.listar();
+            if (score <= 0 || ranking.size() >= 5 && ranking.stream()
+                    .mapToInt(RankingEntry::score).min().orElse(0) >= score) {
+                return;
+            }
+            RankingEntry entrada = new RankingEntry(nome, score, dificuldade, passageiros,
+                    LocalDateTime.now().format(DATA_RANKING), tempoSegundos);
+            rankingRepository.salvar(entrada);
+            System.out.println("Parabéns! Você entrou para o Top 5 de pilotos!");
+        } catch (IOException e) {
+            System.out.println("Erro grave: Falha ao salvar a sua pontuação no arquivo de ranking (" + e.getMessage() + ").");
         }
-        RankingEntry entrada = new RankingEntry(nome, score, dificuldade, passageiros,
-                LocalDateTime.now().format(DATA_RANKING), tempoSegundos);
-        rankingRepository.salvar(entrada);
-        System.out.println("Parabéns! Você entrou para o Top 5 de pilotos!");
     }
 
     private void exibirRanking() {
         System.out.println("\n====== RANKING TOP 5 PILOTOS ======");
-        List<RankingEntry> entradas = rankingRepository.listar();
-        if (entradas.isEmpty()) {
-            System.out.println("Nenhum registro encontrado. Seja o primeiro a jogar!");
-        } else {
-            int posicao = 1;
-            for (RankingEntry entrada : entradas) {
-                System.out.printf("%d. %s - %d pts | Dificuldade: %s | Coletados: %d | Tempo: %ds | %s%n",
-                        posicao++, entrada.name(), entrada.score(), entrada.dificuldade(),
-                        entrada.passageirosColetados(), entrada.tempoJogo(), entrada.dataHora());
+        try {
+            List<RankingEntry> entradas = rankingRepository.listar();
+            if (entradas.isEmpty()) {
+                System.out.println("Nenhum registro encontrado. Seja o primeiro a jogar!");
+            } else {
+                int posicao = 1;
+                for (RankingEntry entrada : entradas) {
+                    System.out.printf("%d. %s - %d pts | Dificuldade: %s | Coletados: %d | Tempo: %ds | %s%n",
+                            posicao++, entrada.name(), entrada.score(), entrada.dificuldade(),
+                            entrada.passageirosColetados(), entrada.tempoJogo(), entrada.dataHora());
+                }
             }
+        } catch (IOException e) {
+            System.out.println("Erro ao carregar o ranking. Verifique as permissões de arquivo (" + e.getMessage() + ").");
         }
         System.out.println("===================================");
     }
@@ -334,8 +343,12 @@ public class JogoService {
         }
         String resposta = scanner.nextLine().trim();
         if (resposta.equalsIgnoreCase("s") || resposta.equalsIgnoreCase("sim")) {
-            rankingRepository.limpar();
-            System.out.println("Ranking resetado com sucesso!");
+            try {
+                rankingRepository.limpar();
+                System.out.println("Ranking resetado com sucesso!");
+            } catch (IOException e) {
+                System.out.println("Erro Crítico: Não foi possível limpar o ranking (" + e.getMessage() + ").");
+            }
         } else {
             System.out.println("Operação cancelada.");
         }
