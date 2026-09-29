@@ -1,7 +1,6 @@
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,19 +18,19 @@ public class JogoServiceTest {
         boolean failWrite;
         boolean failClear;
         int saves;
-        public void salvar(RankingEntry e) {
-            if (failWrite) throw new UncheckedIOException(new IOException("Falha de gravação simulada"));
+        public void salvar(RankingEntry e) throws IOException {
+            if (failWrite) throw new IOException("Falha de gravação simulada");
             entries.add(e);
             entries.sort(java.util.Comparator.comparingInt(RankingEntry::score).reversed());
             if (entries.size() > 5) entries.remove(5);
             saves++;
         }
-        public List<RankingEntry> listar() {
-            if (failRead) throw new UncheckedIOException(new IOException("Falha de leitura simulada"));
+        public List<RankingEntry> listar() throws IOException {
+            if (failRead) throw new IOException("Falha de leitura simulada");
             return List.copyOf(entries);
         }
-        public void limpar() {
-            if (failClear) throw new UncheckedIOException(new IOException("Falha de limpeza simulada"));
+        public void limpar() throws IOException {
+            if (failClear) throw new IOException("Falha de limpeza simulada");
             entries.clear();
         }
     }
@@ -108,14 +107,15 @@ public class JogoServiceTest {
         }
         var falha = new MemoryRanking();
         falha.failRead = true;
-        check(run("2\n4\n", falha).contains("Não foi possível acessar o ranking:"), "erro de leitura deve ser informado");
+        check(run("2\n4\n", falha).contains("Erro ao carregar o ranking"), "erro de leitura deve ser informado");
         falha.failRead = false;
         falha.failWrite = true;
+        falha.entries.add(new RankingEntry("Recordista", 1, solidexercicio10.model.Dificuldade.MEDIO, 5, "2026-09-29", 0));
         String escrita = run("1\nPaulo\nmedio\n2\n\n" + route + "4\n", falha);
-        check(escrita.contains("Não foi possível acessar o ranking:") && !escrita.contains("Parabéns!"), "gravação malsucedida não pode informar sucesso");
+        check(escrita.contains("Falha ao salvar a sua pontuação") && !escrita.contains("Parabéns!") && !escrita.contains("Novo recorde absoluto"), "gravação malsucedida não pode informar sucesso");
         falha.failClear = true;
         String limpeza = run("3\ns\n4\n", falha);
-        check(limpeza.contains("Não foi possível acessar o ranking:") && !limpeza.contains("Ranking resetado com sucesso!"), "limpeza malsucedida não pode informar sucesso");
+        check(limpeza.contains("Não foi possível limpar o ranking") && !limpeza.contains("Ranking resetado com sucesso!"), "limpeza malsucedida não pode informar sucesso");
         System.out.println("OK: vitória, pouso, pontuação, Top 5, ranking, reset, dimensões, aborto, derrotas, fim da entrada e erros de I/O");
     }
 }
