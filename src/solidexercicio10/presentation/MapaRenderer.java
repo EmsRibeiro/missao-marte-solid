@@ -28,7 +28,14 @@ public class MapaRenderer {
         System.out.printf("Piloto: %s | Pontuação: %d%n", pilotoNome, score);
         System.out.println("================================================================");
 
-        for (int y = maxY; y >= minY; y--) {
+        System.out.print("     ");
+        for (int x = minX; x <= maxX; x++) {
+            System.out.printf("%4d", x);
+        }
+        System.out.println();
+        // w diminui y: linhas crescentes preservam a orientação do original.
+        for (int y = minY; y <= maxY; y++) {
+            System.out.printf("%4d ", y);
             for (int x = minX; x <= maxX; x++) {
                 String simbolo = "."; 
 
@@ -67,9 +74,14 @@ public class MapaRenderer {
                         }
                     }
                 }
-                System.out.print(simbolo + " ");
+                System.out.printf("%4s", simbolo);
             }
             System.out.println();
+        }
+        System.out.println("Legenda: N=Nave, P=Passageiro, A=Asteroide, I=Inimigo, L=Plataforma, .=Vazio");
+        for (Passageiro passageiro : missao.getPassageiros()) {
+            System.out.printf(" - %s (%s) em (%d,%d)%n", passageiro.getNome(),
+                    passageiro.getTipo(), passageiro.getX(), passageiro.getY());
         }
         System.out.println("================================================================\n");
     }

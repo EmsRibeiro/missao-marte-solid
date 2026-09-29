@@ -10,7 +10,7 @@ Este documento fixa as **assinaturas públicas mínimas** para o trabalho em par
 | Lucas | `model/*.java`, diagrama de classes | `refactor/modelo` |
 | Emerson | `repository/*.java`, `presentation/MapaRenderer.java`, diagrama de pacotes | `refactor/ranking-apresentacao` |
 
-Commits em `main` são a base comum. Cada pessoa cria a própria branch **a partir da `main` publicada**, sobe os commits da sua parte e abre um PR para `main`. Nenhuma branch modifica os arquivos da outra pessoa sem combinar antes. `docs/uml/diagrama-classes-model.*` pertence ao Lucas; `docs/uml/diagrama-pacotes.*` pertence ao Emerson.
+Commits em `main` são a base comum. Cada pessoa cria a própria branch **a partir da `main` publicada**, sobe os commits da sua parte e abre um PR para `main`. Mudanças de integração podem complementar arquivos de outra parte quando combinadas; devem preservar seus contratos e registrar o motivo no commit. `docs/uml/diagrama-classes-model.*` pertence ao Lucas; `docs/uml/diagrama-pacotes.*` pertence ao Emerson.
 
 ## Modelo — Lucas implementa
 
@@ -88,9 +88,9 @@ public record RankingEntry(
 ) {}
 
 public interface RankingRepository {
-    void salvar(RankingEntry entrada);
-    List<RankingEntry> listar();
-    void limpar();
+    void salvar(RankingEntry entrada) throws IOException;
+    List<RankingEntry> listar() throws IOException;
+    void limpar() throws IOException;
 }
 
 public class ArquivoRankingRepository implements RankingRepository {
@@ -103,7 +103,7 @@ public class MapaRenderer {
 }
 ```
 
-Imports necessários: `solidexercicio10.model.Dificuldade`, `solidexercicio10.model.Missao`, `java.util.List`. Use **Java 17 ou superior** (o `record` exige Java 16+). O ranking em arquivo deve ser JSON válido, ordenado por pontuação decrescente e limitado aos 5 melhores, conforme original. Em caso de pontuação empatada com o quinto quando já há cinco, mantenha os cinco anteriores (a seleção é responsabilidade de Paulo; o repositório garante ordenação e limite como defesa). `listar()` retorna lista vazia se não houver arquivo; falhas reais de I/O precisam ser informadas. `limpar()` só informa sucesso quando a limpeza realmente ocorrer. O desenho do mapa não modifica a missão.
+Imports necessários: `solidexercicio10.model.Dificuldade`, `solidexercicio10.model.Missao`, `java.util.List`, `java.io.IOException`. Use **Java 17 ou superior** (o `record` exige Java 16+). O ranking em arquivo deve ser JSON válido, ordenado por pontuação decrescente e limitado aos 5 melhores, conforme original. Em caso de pontuação empatada com o quinto quando já há cinco, mantenha os cinco anteriores (a seleção é responsabilidade de Paulo; o repositório garante ordenação e limite como defesa). `listar()` retorna lista vazia se não houver arquivo; falhas reais de I/O e formato JSON inválido são propagados como `IOException` e tratados pelo serviço. `limpar()` só informa sucesso quando a limpeza realmente ocorrer. O desenho do mapa não modifica a missão.
 
 ## Fluxo — Paulo implementa
 

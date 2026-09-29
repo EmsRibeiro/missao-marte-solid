@@ -1,90 +1,95 @@
-# Revisão e testes do fluxo — Paulo
+# Verificação do projeto integrado
 
-Revisão do fluxo iniciada em 26/09/2026 e repetida em 27/09/2026, após a
-integração dos PRs #1, #2 e #3.
+## Validação de 29/09/2026
 
-## Escopo da verificação
+Base: `main` após o merge dos PRs #4 e #5, commit
+`76bc1c67165db5802954124f78c8c02eb50ec43a`. Correções de integração feitas
+na `branch-correçao`. O código original e os arquivos do modelo de Lucas
+não foram alterados nesta etapa.
 
-O código inteiro de `src/solidexercicio10/` foi compilado em Java 17 com as
-implementações reais do modelo, repositório e renderizador. O teste executável
-usa o renderizador real e substitui somente o repositório de arquivo por um
-repositório em memória, para testar o fluxo sem alterar o ranking do jogador.
+A versão original e a refatorada compilam com Java 17. O original foi
+comparado por conteúdo com os arquivos preservados no Git. Os três testes
+executáveis abaixo passaram. Compilação não equivale a comprovar todo o
+comportamento possível; os cenários cobertos estão descritos a seguir.
 
-Um teste adicional de integração, executado em diretório temporário, venceu
-uma partida com posições controladas, gravou uma entrada real no JSON, abriu
-uma segunda execução para consultar a pontuação 82 e resetou o arquivo. O
-teste também confirmou estatísticas ao abandonar. O código desse teste
-adicional era temporário; `tests/JogoServiceTest.java` cobre o fluxo de forma
-repetível no repositório entregue.
+## Como repetir
 
-## Resultados
+Na raiz do projeto, compile a versão nova conforme o README. Depois execute,
+no Git Bash ou no PowerShell:
 
-O teste executável `tests/JogoServiceTest.java` passou nos seguintes cenários:
-
-- vitória com cinco passageiros e retorno a `(0,0)`;
-- pontuação final de 82 para uma rota de oito movimentos no modo médio;
-- resgatar todos sem pousar não registra vitória nem ranking;
-- empate com a quinta pontuação não substitui os registros anteriores;
-- pontuação maior que a quinta é enviada ao repositório;
-- consulta do ranking, confirmação e cancelamento do reset;
-- dimensão inválida usa o tamanho padrão 5;
-- capacidade de cinco lugares, inclusive no modo fácil;
-- abandono da missão mostra estatísticas e não registra pontuação;
-- estatísticas de abandono mostram o recorde atual quando já existe;
-- três colisões encerram a missão e mostram estatísticas;
-- pontuação zero encerra a missão sem registrar ranking;
-- fim da entrada durante menu, preparação ou partida encerra sem loop infinito;
-- `UncheckedIOException` ao listar, salvar ou limpar é informada ao jogador;
-- falha ao salvar/limpar não exibe a mensagem de sucesso da operação.
-
-O código original também compilou com Java 17. A comparação com a base
-confirmou que nenhum arquivo em `src/exercicio10/` foi alterado.
-
-## Como repetir no projeto integrado
-
-Na raiz do repositório, depois de compilar todos os arquivos da versão nova:
-
-```bash
-javac -encoding UTF-8 -cp out -d out tests/JogoServiceTest.java
+```text
+javac -encoding UTF-8 -cp out -d out tests/*.java
 java -cp out JogoServiceTest
+java -cp out ArquivoRankingRepositoryTest
+java -cp out MapaRendererTest
 ```
 
-Os dois comandos também funcionam no PowerShell. O teste usa um repositório
-em memória para não alterar o ranking do jogador. Os dados aleatórios são
-controlados para que a mesma rota tenha sempre o mesmo resultado.
+Para verificar a compilação original:
 
-## Ajustes feitos nesta revisão
+```text
+javac -encoding UTF-8 -d out src/exercicio10/*.java
+```
 
-1. Estatísticas passam a aparecer na vitória, derrota, abandono e fim da entrada
-   durante a partida, incluindo o recorde atual quando há um. Isso atende ao
-   requisito de estatísticas ao final da missão.
-2. A capacidade da nave voltou a cinco, como no código original.
-3. O menu informa erros de I/O representados por `UncheckedIOException` e permite
-   nova tentativa. A implementação atual do repositório de arquivo captura e
-   imprime suas falhas sem lançar exceção, portanto a indicação de sucesso
-   ainda depende de correção na camada de persistência.
+## Fluxo — `JogoServiceTest`
 
-## Decisões e limitações explícitas
+Usa modelo e renderizador reais, posições aleatórias controladas e repositório
+em memória. Cenários aprovados:
 
-- O tamanho aceito é de 2 a 50 (coordenadas `-tamanho` a `+tamanho`). O mínimo
-  garante espaço para todas as dificuldades; o máximo evita mapas impraticáveis
-  no console. Esse limite é uma mudança deliberada em relação ao original.
-- Cada comando de movimento gasta um ponto, inclusive quando a nave já está
-  no limite; um comando de embarque avança os inimigos mesmo sem passageiro.
-  Ambos os comportamentos foram mantidos do original.
-- O modo fácil mantém quatro passageiros (dois professores e dois engenheiros),
-  e os demais mantêm cinco, incluindo o astronauta, conforme o código original.
-- O serviço ainda imprime menu e mensagens. A separação de apresentação é parcial;
-  isso pode ser discutido na revisão crítica de SRP.
-- A pontuação usa polimorfismo; o catálogo em `criarPassageiro` ainda precisa
-  ser editado para incluir um novo tipo. OCP é parcial, não absoluto.
+- vitória com cinco passageiros e retorno à plataforma;
+- rota de oito movimentos no modo médio termina com 82 pontos;
+- resgatar todos sem pousar não registra vitória nem ranking;
+- Top 5: empate com o quinto não substitui registros; pontuação maior entra;
+- consulta, cancelamento e confirmação do reset;
+- dimensão inválida usa 5; nave mantém cinco lugares no modo fácil;
+- abandono mostra estatísticas e recorde anterior, sem salvar pontuação;
+- perda das três vidas e pontuação zero encerram com estatísticas;
+- fim da entrada no menu, preparação e partida não causa loop infinito;
+- erros simulados de leitura, escrita e limpeza usam o contrato `IOException`;
+- gravação malsucedida não anuncia entrada no ranking nem novo recorde;
+- limpeza malsucedida não anuncia reset bem-sucedido.
 
-## Pendências de qualidade
+## Arquivo e integração — `ArquivoRankingRepositoryTest`
 
-- O renderizador real não mostra o símbolo da plataforma `L` em `(0,0)` quando
-  a nave deixa a posição inicial.
-- O repositório não escapa aspas em nomes no JSON e não propaga falhas reais
-  de I/O; um reset malsucedido pode resultar em mensagem final de sucesso.
-- Confirmar com o responsável pelo ranking a ordenação e o Top 5 em arquivo
-  real depois de corrigir casos inválidos.
-- Finalizar `REVISAO-SOLID.md` e complementar os diagramas UML.
+Usa arquivo real em diretório temporário, removido ao final. Cenários aprovados:
+
+- arquivo inexistente produz lista vazia e pode ser resetado;
+- nomes com aspas, barras, chaves, vírgulas, dois-pontos, acentos e emoji;
+- preservação de escapes de controle e leitura de Unicode escapado;
+- Top 5 ordenado, limite de cinco e preservação dos anteriores em empate;
+- leitura ordena registros antigos e aceita ausência de campos opcionais;
+- rejeição de JSON truncado, escapes inválidos, campos obrigatórios ausentes,
+  números inválidos ou fora da faixa, vírgula final e conteúdo excedente;
+- tentativa de salvar sobre arquivo inválido preserva o conteúdo original;
+- falha de leitura de arquivo inválido avisa e permite retornar ao menu;
+- partida completa grava 82 pontos e cinco passageiros em JSON;
+- outra execução do serviço lê essa pontuação; reset confirmado remove o arquivo;
+- falhas reais ao ler um diretório, remover diretório não vazio e gravar num
+  diretório pai inexistente são propagadas como `IOException`.
+
+## Apresentação — `MapaRendererTest`
+
+Cenários aprovados:
+
+- `w` coloca a nave visualmente acima da plataforma;
+- a plataforma aparece quando a nave deixa a origem;
+- a lista identifica nome, tipo e coordenadas dos passageiros;
+- desenhar não modifica posição da nave nem a lista da missão.
+
+## Ajustes desta etapa
+
+1. Testes atualizados para `IOException`, conforme a interface integrada por Emerson.
+2. Leitura e escrita de strings JSON corrigidas; chaves dentro do nome não
+   encerram objetos. JSON inválido gera erro em vez de registros truncados.
+3. Leitura garante ordenação e limite Top 5, inclusive em arquivos existentes.
+4. O serviço anuncia novo recorde somente depois de salvar com sucesso.
+5. O mapa acompanha a orientação original dos comandos e identifica coordenadas
+   e tipos de passageiros, mantendo os símbolos do modelo.
+6. README e contratos atualizados para refletir a implementação atual.
+
+## O que permanece
+
+A documentação de modelagem ainda deve ser concluída pelos responsáveis.
+A revisão crítica SOLID será feita quando o projeto estiver pronto.
+O serviço mantém saída de console direta e um catálogo fixo de passageiros.
+O JSON é específico para este formato e não há proteção contra duas instâncias
+escrevendo simultaneamente ou interrupção no meio da gravação.

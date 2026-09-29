@@ -309,10 +309,7 @@ public class JogoService {
         try {
             List<RankingEntry> ranking = rankingRepository.listar();
             
-            // Lógica do Paulo mantida e protegida pelo nosso try-catch
-            if (!ranking.isEmpty() && score > ranking.get(0).score()) {
-                System.out.println("Novo recorde absoluto do sistema!");
-            }
+            boolean novoRecorde = !ranking.isEmpty() && score > ranking.get(0).score();
             
             if (score <= 0 || ranking.size() >= 5 && ranking.stream()
                     .mapToInt(RankingEntry::score).min().orElse(0) >= score) {
@@ -321,6 +318,9 @@ public class JogoService {
             RankingEntry entrada = new RankingEntry(nome, score, dificuldade, passageiros,
                     LocalDateTime.now().format(DATA_RANKING), tempoSegundos);
             rankingRepository.salvar(entrada);
+            if (novoRecorde) {
+                System.out.println("Novo recorde absoluto do sistema!");
+            }
             System.out.println("Parabéns! Você entrou para o Top 5 de pilotos!");
         } catch (IOException e) {
             System.out.println("Erro grave: Falha ao salvar a sua pontuação no arquivo de ranking (" + e.getMessage() + ").");
@@ -342,7 +342,7 @@ public class JogoService {
                 }
             }
         } catch (IOException e) {
-            System.out.println("Erro ao carregar o ranking. Verifique as permissões de arquivo (" + e.getMessage() + ").");
+            System.out.println("Erro ao carregar o ranking (" + e.getMessage() + ").");
         }
         System.out.println("===================================");
     }

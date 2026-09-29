@@ -1,22 +1,29 @@
 # Missão Marte Unifor — refatoração SOLID
 
-Base da atividade: [solid-tutorial](https://github.com/marcelobezerra-dotcom/solid-tutorial).
-Repositório da equipe: https://github.com/paulo-edvandro/missao-marte-solid.
+Base: [solid-tutorial](https://github.com/marcelobezerra-dotcom/solid-tutorial).
+Repositório compartilhado: https://github.com/paulo-edvandro/missao-marte-solid.
 
-Paulo Edvandro Rocha Filho desenvolveu o fluxo e a integração inicial; Lucas
-Alencar desenvolveu as entidades do modelo; Emerson (`EmsRibeiro`) desenvolveu
-a persistência e o desenho do mapa. Cada integrante deve identificar sua
-contribuição e adaptar este README no repositório individual entregue.
+## Integrantes e contribuições
 
-O código inicial em `src/exercicio10/` permanece preservado para comparação.
-O jogo refatorado está em `src/solidexercicio10/`. As assinaturas combinadas
-entre os integrantes estão em [docs/CONTRATOS.md](docs/CONTRATOS.md).
+- Paulo Edvandro Rocha Filho (`paulo-edvandro`): fluxo da partida, ponto de entrada,
+  integração, testes do fluxo e atualização da documentação.
+- Lucas Alencar (`luken6406`): entidades e regras do modelo, diagrama de classes.
+- Emerson (`EmsRibeiro`): ranking em JSON, renderização do mapa e diagrama de pacotes.
+
+As correções de integração na `branch-correçao` complementam a persistência,
+seus testes e a renderização, sem alterar os arquivos do modelo ou o diagrama
+sob responsabilidade de Lucas. O histórico de commits registra essas etapas.
+
+O original em `src/exercicio10/` permanece preservado. A versão refatorada
+está em `src/solidexercicio10/`. Os contratos estão em
+[docs/CONTRATOS.md](docs/CONTRATOS.md).
 
 ## Compilar e executar
 
-É necessário JDK 17 ou superior. Execute os comandos na raiz do repositório.
+É necessário **JDK 17 ou superior**. Execute os comandos na raiz do projeto.
+Use os comandos correspondentes ao seu terminal.
 
-### Git Bash ou terminal Linux/macOS
+### Git Bash, Linux ou macOS
 
 ```bash
 mkdir -p out
@@ -32,65 +39,114 @@ javac -encoding UTF-8 -d out (Get-ChildItem -Recurse -Filter *.java src/solidexe
 java -cp out solidexercicio10.Main
 ```
 
-Para executar a versão original no Git Bash:
+Para compilar e executar o original, em qualquer um desses terminais:
 
-```bash
+```text
 javac -encoding UTF-8 -d out src/exercicio10/*.java
 java -cp out exercicio10.Main
 ```
 
-O original grava `ranking.json`; a versão nova grava
-`ranking-solid-exercicio10.json` no diretório de execução.
+O original grava `ranking.json`; o refatorado grava
+`ranking-solid-exercicio10.json` no diretório em que o programa é executado.
 
-O menu permite iniciar uma missão, consultar o Top 5, limpar o ranking com
-confirmação ou sair. Na partida, use `w`, `a`, `s`, `d` para mover, `c` para
-embarcar um passageiro na mesma posição e `q` para abandonar. Para vencer,
-é necessário embarcar todos os passageiros e retornar à posição `(0,0)`.
-O tamanho informado para o mapa deve estar entre 2 e 50; entradas inválidas
-usam o tamanho 5.
+## Como jogar
 
-## Organização e decisões
+O menu permite iniciar uma missão, consultar o Top 5, resetar o ranking com
+confirmação e sair. Escolha nome, dificuldade e tamanho do mapa.
 
-- `Main` monta as dependências e inicia o loop de leitura.
-- `model` guarda as entidades e regras da missão. As subclasses de `Passageiro`
-  definem suas pontuações por meio de `getPontuacao()`.
-- `service/JogoService` conduz o menu e a partida, pede ao modelo para mover,
-  embarcar e verificar colisões, e usa o contrato `RankingRepository` para
-  consultar e atualizar o ranking.
-- `presentation/MapaRenderer` desenha o mapa; `repository` contém a interface
-  do ranking, o registro de cada partida e sua implementação em arquivo JSON.
+- `w`, `a`, `s`, `d`: movimentar a nave; cada comando de movimento custa um ponto.
+- `c`: embarcar um passageiro na posição da nave.
+- `q`: abandonar a missão e mostrar suas estatísticas.
+- Vitória: embarcar todos os passageiros e retornar à plataforma `L` em `(0,0)`.
+- Derrota: perder as três vidas ou atingir pontuação zero.
 
-O [diagrama de classes](docs/uml/diagrama-classes-model.svg) mostra entidades,
-herança, interfaces e associações do modelo; sua
-[fonte PlantUML](docs/uml/diagrama-classes-model.puml) permite alterações.
-O [diagrama de pacotes](docs/uml/diagrama-pacotes.mmd) registra as dependências
-entre as camadas; falta exportar uma imagem do diagrama de pacotes.
+O tamanho informado é o alcance de cada eixo: 5 gera coordenadas de -5 a +5,
+isto é, uma grade de 11 × 11. São aceitos valores de 2 a 50; entradas inválidas
+usam 5. O mínimo garante espaço para todas as dificuldades.
 
-## Verificações e limitações
+A nave tem cinco lugares. O modo fácil possui quatro passageiros e inicia com
+30 pontos; médio e difícil possuem cinco passageiros e iniciam com 20 e 15
+pontos. Professor vale 10, engenheiro 15 e astronauta 20. Há um, dois ou três
+asteroides e a mesma quantidade de inimigos, conforme a dificuldade.
 
-O teste de fluxo em `tests/JogoServiceTest.java` utiliza posições controladas
-e um ranking em memória. Para executá-lo após compilar a versão nova:
+O mapa usa `N` para nave, `P` para passageiro, `A` para asteroide, `I` para
+inimigo, `L` para plataforma e `.` para espaço vazio. A lista abaixo do mapa
+identifica o nome, tipo e posição dos passageiros. A nave se sobrepõe à
+plataforma quando está na origem; ao sair, a plataforma reaparece se estiver livre.
 
-```bash
-javac -encoding UTF-8 -cp out -d out tests/JogoServiceTest.java
+## Organização e decisões de projeto
+
+- `Main` cria e conecta as dependências.
+- `model` mantém entidades, movimento, embarque e colisões sem imprimir ou
+  persistir dados. As subclasses definem os pontos por `getPontuacao()`.
+- `service/JogoService` coordena menu, partida e seleção de pontuação para o
+  ranking. Recebe `RankingRepository`, `MapaRenderer` e `Random` pelo construtor.
+- `presentation/MapaRenderer` desenha o mapa sem alterar a missão. A orientação
+  das linhas acompanha o original: `w` diminui `y` e move a nave para cima.
+- `repository/RankingRepository` define operações de persistência e propaga
+  `IOException`. `ArquivoRankingRepository` grava e lê JSON, ordenando e
+  limitando o resultado ao Top 5. As mensagens de falha são responsabilidade
+  do serviço. Sucesso e novo recorde só são anunciados após gravar.
+
+O ranking usa um leitor específico para arrays de objetos com strings e
+inteiros, sem dependências externas. Aspas, barras e caracteres de controle
+são escapados. As dificuldades novas são gravadas pelo nome estável do enum;
+valores antigos com acentos continuam sendo lidos. Campos opcionais ausentes
+recebem valores padrão. Arquivos inválidos produzem `IOException`; salvar
+não sobrescreve um ranking cuja leitura falhou. O usuário pode resetá-lo pelo menu.
+
+## Diagramas
+
+- [Classes do domínio — imagem](docs/uml/diagrama-classes-model.svg) e
+  [fonte PlantUML](docs/uml/diagrama-classes-model.puml): entidades, herança,
+  interfaces e relações do modelo. Lucas ainda deve completar `Dificuldade`
+  e conferir a coerência da imagem, relações e multiplicidades com o código.
+- [Pacotes — imagem](docs/uml/diagrama-pacotes.png) e
+  [fonte Mermaid](docs/uml/diagrama-pacotes.mmd): dependências entre as camadas.
+  O serviço importa `RankingRepository`, enquanto `Main` instancia
+  `ArquivoRankingRepository`. A fonte atual mostra dependências por pacote;
+  essa distinção deve ser explicitada no diagrama antes da entrega.
+
+## Testes
+
+Após compilar a versão nova, estes comandos funcionam no Git Bash e no PowerShell:
+
+```text
+javac -encoding UTF-8 -cp out -d out tests/*.java
 java -cp out JogoServiceTest
+java -cp out ArquivoRankingRepositoryTest
+java -cp out MapaRendererTest
 ```
 
-Os resultados e os testes manuais de persistência estão registrados em
-[docs/TESTES-FLUXO.md](docs/TESTES-FLUXO.md) e
+Todos passaram na validação de 29/09/2026 com Java 17. Os testes de arquivo
+usam um diretório temporário e não modificam o ranking do jogador.
+
+Resultados e procedimentos: [docs/TESTES-FLUXO.md](docs/TESTES-FLUXO.md).
+As verificações anteriores do modelo estão em
 [docs/TESTES-MODELO.md](docs/TESTES-MODELO.md).
 
-- A plataforma `L` em `(0,0)` ainda precisa aparecer no desenho do mapa quando
-  a nave estiver em outra posição.
-- O ranking atual não escapa caracteres especiais do nome no JSON e não
-  propaga falhas reais de leitura, gravação ou remoção; a mensagem de erro do
-  serviço só funciona quando o repositório sinaliza a falha.
-- O serviço ainda imprime mensagens diretamente; a separação da apresentação
-  está incompleta. O cadastro de tipos de passageiros ainda exige editar
-  `JogoService.criarPassageiro`, o que limita o OCP.
-- O diagrama de classes deve incluir `Dificuldade`. Ainda falta criar a
-  revisão crítica obrigatória `REVISAO-SOLID.md`.
+## Limitações e pendências da entrega
 
-Antes da entrega individual, cada integrante deve revisar as limitações
-acima, adicionar seu nome e suas decisões ao README, conferir os diagramas
-e incluir a sua revisão crítica do projeto.
+- O serviço ainda imprime menu e mensagens: a separação da apresentação é parcial.
+- Os pontos usam polimorfismo, mas novos tipos de passageiros exigem editar
+  `criarPassageiro`. OCP não é atendido de forma absoluta.
+- O leitor de JSON aceita o formato específico do ranking, não estruturas
+  JSON arbitrárias. Não há escrita atômica ou controle de gravação simultânea.
+- Símbolos e limite do mapa são mudanças visuais e de validação deliberadas.
+- Completar os diagramas conforme indicado acima, preservando a responsabilidade
+  dos integrantes por seus arquivos.
+- Criar `REVISAO-SOLID.md` somente após concluir o projeto, com observações sobre
+  os cinco princípios, melhorias priorizadas, concordância e discordância
+  justificadas e resultados dos testes.
+
+## Entrega individual
+
+O enunciado exige um repositório individual por aluno contendo o original,
+a versão refatorada completa, diagramas com fontes, README e revisão SOLID.
+O repositório compartilhado serve ao desenvolvimento e à integração.
+
+Antes de enviar, cada aluno deve adaptar o README para identificar o autor
+da entrega e seu repositório, conferir todos os arquivos e preservar o histórico
+de contribuições. Envie no Moodle o link completo do repositório público ou
+libere acesso para `marcelobezerra-dotcom`. A apresentação é em equipe e todos
+precisam explicar o funcionamento, as decisões, os testes e as limitações.
