@@ -88,7 +88,7 @@ public class JogoService {
         }
         Dificuldade dificuldade = Dificuldade.deString(scanner.nextLine());
 
-        System.out.print("Tamanho do mapa (ex: 5 para -5 a +5): ");
+        System.out.print("Tamanho do mapa (2 a 50; ex: 5 para -5 a +5): ");
         if (!scanner.hasNextLine()) {
             return;
         }
@@ -113,6 +113,7 @@ public class JogoService {
     private int lerTamanhoMapa(String entrada) {
         try {
             int tamanho = Integer.parseInt(entrada.trim());
+            // O mínimo garante espaço para todas as dificuldades; o máximo limita a saída no console.
             if (tamanho >= 2 && tamanho <= 50) {
                 return tamanho;
             }
@@ -126,7 +127,7 @@ public class JogoService {
         int passageiros = dificuldade == Dificuldade.FACIL ? 4 : 5;
         int asteroides = dificuldade == Dificuldade.FACIL ? 1 : dificuldade == Dificuldade.DIFICIL ? 3 : 2;
         int inimigos = asteroides;
-        Missao missao = new Missao(new Nave("A-1", passageiros));
+        Missao missao = new Missao(new Nave("A-1", 5));
 
         for (int i = 0; i < passageiros; i++) {
             int[] posicao = sortearPosicaoLivre(missao, minX, maxX, minY, maxY);
@@ -217,6 +218,7 @@ public class JogoService {
                     nave.getPassageiros().size(), nave.getCapacidade(), missao.getPassageiros().size());
             System.out.print("Comando (w/s/a/d/c/q): ");
             if (!scanner.hasNextLine()) {
+                finalizarPartida("Missão encerrada: fim da entrada.", nave, score, movimentos, tempoInicio);
                 return;
             }
             String entrada = scanner.nextLine().trim().toLowerCase(java.util.Locale.ROOT);
@@ -225,7 +227,7 @@ public class JogoService {
             }
             char comando = entrada.charAt(0);
             if (comando == 'q') {
-                System.out.println("Missão abortada pelo piloto.");
+                finalizarPartida("Missão abortada pelo piloto.", nave, score, movimentos, tempoInicio);
                 return;
             }
             if (comando == 'c') {
@@ -253,20 +255,20 @@ public class JogoService {
             if (missao.verificaColisao()) {
                 nave.perderVida();
                 if (nave.getVidas() == 0) {
-                    System.out.println("GAME OVER! A nave foi destruída.");
+                    finalizarPartida("GAME OVER! A nave foi destruída.", nave, score, movimentos, tempoInicio);
                     return;
                 }
                 System.out.printf("Alerta! Colisão detectada! Vidas restantes: %d%n", nave.getVidas());
             }
             if (score <= 0) {
-                System.out.println("Combustível/Pontuação zerada! Missão perdida.");
+                finalizarPartida("Combustível/Pontuação zerada! Missão perdida.",
+                        nave, score, movimentos, tempoInicio);
                 return;
             }
             if (missao.todosEmbarcados()) {
                 if (nave.getX() == 0 && nave.getY() == 0) {
-                    long tempoSegundos = (System.currentTimeMillis() - tempoInicio) / 1000;
-                    System.out.println("Missão cumprida! Nave acoplada à plataforma em (0,0).");
-                    exibirEstatisticas(score, movimentos, tempoSegundos, nave.getPassageiros().size());
+                    long tempoSegundos = finalizarPartida("Missão cumprida! Nave acoplada à plataforma em (0,0).",
+                            nave, score, movimentos, tempoInicio);
                     salvarSeEntrarNoRanking(nome, score, dificuldade,
                             nave.getPassageiros().size(), tempoSegundos);
                     return;
@@ -274,6 +276,13 @@ public class JogoService {
                 System.out.println("Todos resgatados! Retorne à plataforma L em (0,0).");
             }
         }
+    }
+
+    private long finalizarPartida(String mensagem, Nave nave, int score, int movimentos, long tempoInicio) {
+        long tempoSegundos = Math.max(0, (System.currentTimeMillis() - tempoInicio) / 1000);
+        System.out.println(mensagem);
+        exibirEstatisticas(score, movimentos, tempoSegundos, nave.getPassageiros().size());
+        return tempoSegundos;
     }
 
     private void exibirEstatisticas(int score, int movimentos, long tempoSegundos, int passageiros) {
@@ -287,12 +296,8 @@ public class JogoService {
             List<RankingEntry> ranking = rankingRepository.listar();
             if (!ranking.isEmpty()) {
                 RankingEntry primeiro = ranking.get(0);
-                if (score > primeiro.score()) {
-                    System.out.println("Novo recorde absoluto do sistema!");
-                } else {
-                    System.out.printf(" - Recorde atual: %d pontos (Piloto: %s)%n",
-                            primeiro.score(), primeiro.name());
-                }
+                System.out.printf(" - Recorde atual: %d pontos (Piloto: %s)%n",
+                        primeiro.score(), primeiro.name());
             }
         } catch (IOException e) {
             System.out.println("Aviso: Não foi possível verificar o recorde atual devido a uma falha de leitura.");
@@ -303,6 +308,12 @@ public class JogoService {
                                          int passageiros, long tempoSegundos) {
         try {
             List<RankingEntry> ranking = rankingRepository.listar();
+            
+            // Lógica do Paulo mantida e protegida pelo nosso try-catch
+            if (!ranking.isEmpty() && score > ranking.get(0).score()) {
+                System.out.println("Novo recorde absoluto do sistema!");
+            }
+            
             if (score <= 0 || ranking.size() >= 5 && ranking.stream()
                     .mapToInt(RankingEntry::score).min().orElse(0) >= score) {
                 return;
