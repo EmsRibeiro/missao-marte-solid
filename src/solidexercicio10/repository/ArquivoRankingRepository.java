@@ -109,9 +109,21 @@ public class ArquivoRankingRepository implements RankingRepository {
     private String extrairString(String json, String chave) {
         int idx = json.indexOf(chave);
         if (idx == -1) return "";
+        
+        // Encontra a primeira aspa de abertura do valor
         int startQuote = json.indexOf("\"", idx + chave.length() + 1);
-        int endQuote = json.indexOf("\"", startQuote + 1);
-        if (startQuote == -1 || endQuote == -1) return "";
+        if (startQuote == -1) return "";
+
+        // Procura a aspa de fechamento real (que não seja precedida por contra-barra '\')
+        int endQuote = -1;
+        for (int i = startQuote + 1; i < json.length(); i++) {
+            if (json.charAt(i) == '"' && json.charAt(i - 1) != '\\') {
+                endQuote = i;
+                break;
+            }
+        }
+
+        if (endQuote == -1) return "";
         return json.substring(startQuote + 1, endQuote);
     }
 
