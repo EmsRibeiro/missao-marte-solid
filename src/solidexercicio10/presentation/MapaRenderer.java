@@ -4,6 +4,7 @@ import solidexercicio10.model.Asteroide;
 import solidexercicio10.model.Inimigo;
 import solidexercicio10.model.Missao;
 import solidexercicio10.model.Passageiro;
+
 /**
  * Renderiza o ambiente do jogo, quase como criar uma interface visual, só que com carácteres.
  * Somente mostra os dados da missão, sem mexer no resto da Entidade.
@@ -22,7 +23,6 @@ public class MapaRenderer {
      * @param score      Pontuação atual do jogador.
      * @param pilotoNome Nome do piloto fornecido pelo usuário.
      */
-
     public void desenhar(Missao missao, int minX, int maxX, int minY, int maxY, int score, String pilotoNome) {
         System.out.println("\n================================================================");
         System.out.printf("Piloto: %s | Pontuação: %d%n", pilotoNome, score);
@@ -31,6 +31,11 @@ public class MapaRenderer {
         for (int y = maxY; y >= minY; y--) {
             for (int x = minX; x <= maxX; x++) {
                 String simbolo = "."; 
+
+                // Define a plataforma de pouso na origem
+                if (x == 0 && y == 0) {
+                    simbolo = "L";
+                }
 
                 if (missao.getNave().getX() == x && missao.getNave().getY() == y) {
                     simbolo = missao.getNave().getSimbolo();
@@ -42,7 +47,8 @@ public class MapaRenderer {
                         }
                     }
                     
-                    if (simbolo.equals(".")) {
+                    // Permite que asteróides se sobreponham ao espaço vazio ou à plataforma
+                    if (simbolo.equals(".") || simbolo.equals("L")) {
                         for (Asteroide a : missao.getAsteroides()) {
                             if (a.getX() == x && a.getY() == y) {
                                 simbolo = a.getSimbolo();
@@ -51,7 +57,8 @@ public class MapaRenderer {
                         }
                     }
 
-                    if (simbolo.equals(".")) {
+                    // Permite que inimigos se sobreponham ao espaço vazio ou à plataforma
+                    if (simbolo.equals(".") || simbolo.equals("L")) {
                         for (Inimigo i : missao.getInimigos()) {
                             if (i.getX() == x && i.getY() == y) {
                                 simbolo = i.getSimbolo();
